@@ -1,0 +1,6 @@
+*.pdf
+test.py
+*.exe
+__pycache__/
+first_code.txt
+blue_team*
