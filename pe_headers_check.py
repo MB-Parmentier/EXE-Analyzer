@@ -33,7 +33,7 @@ def main():
     #phf.pretty_print(summary) <---------------- Affichage d'un résumé du fichier PE
     for fun in pha.check_list:
         elem = fun(summary)
-        if elem[0] != 0:
+        if elem != 0:
             scores.append(elem[0])
             explanations.append(elem[1])
 
