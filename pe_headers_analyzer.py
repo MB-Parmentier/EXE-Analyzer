@@ -4,7 +4,8 @@ score_table = {
     "magic_number":10,
     "number_of_sections":0.5,
     "aslr":10,
-    "e_lfanew":15
+    "e_lfanew":15,
+    "flags":75,
 }
 
 def check_magic_number(sum):
@@ -26,11 +27,22 @@ def check_e_lfanew(sum):
     return 0
 
 def check_flags(sum):
+    sec = []
+    for s in sum["Sections"]:
+        if "WRITE" in s["Flags"] and "EXECUTE" in s["Flags"]: # /!\ SECTION WRITE + EXECUTE
+            sec.append(s["Name"])
+    if len(sec)!=0:
+        count=score_table["flags"]
+        alert_string = "Au moins une section est à la fois en écriture et en exécution.\nSection(s) concernée(s) : "
+        for name in sec:
+            alert_string+="\n"+name
+        print(alert_string)
+        return count,alert_string
     return 0
 
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
-check_list = [check_magic_number,check_e_lfanew]
+check_list = [check_magic_number,check_e_lfanew,check_flags]
 
 def main(sum):
     check_magic_number(sum)
