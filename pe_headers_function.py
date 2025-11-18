@@ -69,7 +69,7 @@ def pe_summary(path: Path):
         file_size = None
     summary["File"] = {"Path": str(path), "Size": file_size}
 
-    return summary
+    return pe,summary
 
 
 def pretty_print(summary):

@@ -29,17 +29,24 @@ def main():
         print("File not found:", path, file=sys.stderr)
         sys.exit(2)
 
-    summary = phf.pe_summary(path)
+    pe = phf.pe_summary(path)
     #phf.pretty_print(summary) <---------------- Affichage d'un résumé du fichier PE
+    # Boucler sur toutes les fonctions en fournissant le PE comme paramètre
     for fun in pha.check_list:
-        elem = fun(summary)
+        elem = fun(pe[0])
+        if elem != 0:
+            scores.append(elem[0])
+            explanations.append(elem[1])
+    # Maintenant, pour les fonctions ayant besoin du summary complet
+    for fun in pha.check_w_fsize:
+        elem = fun(pe[1])
         if elem != 0:
             scores.append(elem[0])
             explanations.append(elem[1])
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:
-            json.dump(summary, fh, indent=2)
+            json.dump(pe, fh, indent=2)
         print(f"\nWrote JSON report to {args.json}")
 
 
