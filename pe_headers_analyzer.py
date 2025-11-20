@@ -7,6 +7,7 @@ score_table = {
     "e_lfanew":15,
     "flags":75,
     "pe_sign":10,
+    "ratio":10,
 }
 
 def check_magic_number(pe):
@@ -51,10 +52,31 @@ def pe_sign(pe):
     print("C'est OK pour la signature")
     return 0
 
+def ratio_virtual_raw_size(pe):
+    jokers = [".data",".tls",".bss",".ndata"] # ces sections font exception
+    sections = pe.sections
+    lsec = []
+    for s in sections:
+        sname = s.Name.decode(errors="ignore").rstrip("\x00")
+        if sname not in jokers:
+            ratio = s.Misc_VirtualSize / s.SizeOfRawData
+            print("VSize :",s.Misc_VirtualSize,"\nRawSize :",s.SizeOfRawData,"\nRatio :",ratio)
+            if (ratio<0.5) or (ratio>3):
+                lsec.append(sname)
+    if len(lsec)!=0:
+        count=score_table["ratio"]
+        alert_string = "Au moins une section a un ratio VirtualSize/RawSize atypique.\nSection(s) concernée(s) : "
+        for name in lsec:
+            alert_string+="\n"+name
+        print(alert_string)
+        return count,alert_string
+    return 0
+
+
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
-check_list = [check_magic_number,pe_sign]
-check_w_fsize = [check_e_lfanew,check_flags]
+check_list = [check_magic_number,pe_sign,ratio_virtual_raw_size]
+check_w_sum = [check_e_lfanew,check_flags]
 
 def main(sum):
     check_magic_number(sum)

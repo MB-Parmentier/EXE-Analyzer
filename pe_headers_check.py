@@ -38,7 +38,7 @@ def main():
             scores.append(elem[0])
             explanations.append(elem[1])
     # Maintenant, pour les fonctions ayant besoin du summary complet
-    for fun in pha.check_w_fsize:
+    for fun in pha.check_w_sum:
         elem = fun(pe[1])
         if elem != 0:
             scores.append(elem[0])
