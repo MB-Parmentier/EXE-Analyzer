@@ -3,6 +3,7 @@
 score_table = {
     "magic_number":10,
     "number_of_sections":0.5,
+    "low_number_of_sections":10,
     "aslr":10,
     "e_lfanew":15,
     "flags":75,
@@ -45,7 +46,6 @@ def check_flags(summary):
 def pe_sign(pe):
     eln = pe.NT_HEADERS.Signature
     eln = hex(eln)
-    print(eln)
     if eln != 0x00004550:
         count=score_table["pe_sign"]
         return count,"La signature PE est invalide."
@@ -60,7 +60,7 @@ def ratio_virtual_raw_size(pe):
         sname = s.Name.decode(errors="ignore").rstrip("\x00")
         if sname not in jokers:
             ratio = s.Misc_VirtualSize / s.SizeOfRawData
-            print("VSize :",s.Misc_VirtualSize,"\nRawSize :",s.SizeOfRawData,"\nRatio :",ratio)
+            #print("VSize :",s.Misc_VirtualSize,"\nRawSize :",s.SizeOfRawData,"\nRatio :",ratio)
             if (ratio<0.5) or (ratio>3):
                 lsec.append(sname)
     if len(lsec)!=0:
@@ -73,10 +73,26 @@ def ratio_virtual_raw_size(pe):
     return 0
 
 
+def get_sections_number(summary):
+    nb = len(summary["Sections"])
+    print(nb)
+    diff = nb-10
+    if diff > 0:
+        count = score_table["number_of_sections"]
+        count*=diff
+        print(count)
+        return count,f"Il y a {nb} sections au total, ce qui est élevé."
+    if nb-5 < 0:
+        count = score_table["low_number_of_sections"]
+        print(count)
+        return count,f"Il y a {nb} sections au total, ce qui est peu."
+    return 0
+
+
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
 check_list = [check_magic_number,pe_sign,ratio_virtual_raw_size]
-check_w_sum = [check_e_lfanew,check_flags]
+check_w_sum = [check_e_lfanew,check_flags,get_sections_number]
 
 def main(sum):
     check_magic_number(sum)
