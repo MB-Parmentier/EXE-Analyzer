@@ -110,10 +110,14 @@ def aslr(pe):
     dll_char = pe.OPTIONAL_HEADER.DllCharacteristics
     has_aslr = bool(dll_char & 0x40)
     ts = pe.FILE_HEADER.TimeDateStamp
-    print("Date de compilation =",datetime.fromtimestamp(ts))
-    # Si compilé après 2012
-    if not has_aslr and ts-1325376000 > 0:
-        return score_table["aslr"], "L'ASLR n'est pas activé sur un exécutable moderne (2012)."
+    dtc = datetime.fromtimestamp(ts)
+    print("Date de compilation =",dtc)
+    # Si pas d'ASLR
+    if not has_aslr:
+        if ts-1325376000 > 0:
+            return score_table["aslr"], f"L'ASLR n'est pas activé sur un exécutable moderne (2012 et plus).\
+            Date de compilation indiquée : {dtc}" # si compilé après 2012
+        return score_table["aslr"], f"L'ASLR n'est pas activé. Date de compilation indiquée : {dtc}"
     return 0
 
 
