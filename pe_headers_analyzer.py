@@ -1,4 +1,4 @@
-
+from datetime import datetime
 
 score_table = {
     "magic_number":10,
@@ -10,6 +10,7 @@ score_table = {
     "pe_sign":10,
     "ratio":10,
     "sections_names":15,
+    "aslr":15
 }
 
 def check_magic_number(pe):
@@ -105,9 +106,21 @@ def sections_names(pe):
     return 0
 
 
+def aslr(pe):
+    dll_char = pe.OPTIONAL_HEADER.DllCharacteristics
+    has_aslr = bool(dll_char & 0x40)
+    ts = pe.FILE_HEADER.TimeDateStamp
+    print("Date de compilation =",datetime.fromtimestamp(ts))
+    # Si compilé après 2012
+    if not has_aslr and ts-1325376000 > 0:
+        return score_table["aslr"], "L'ASLR n'est pas activé sur un exécutable moderne (2012)."
+    return 0
+
+
+
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
-check_list = [check_magic_number,pe_sign,ratio_virtual_raw_size,sections_names]
+check_list = [check_magic_number,pe_sign,ratio_virtual_raw_size,sections_names,aslr]
 check_w_sum = [check_e_lfanew,check_flags,get_sections_number]
 
 def main(sum):
