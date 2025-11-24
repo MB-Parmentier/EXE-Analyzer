@@ -9,6 +9,7 @@ score_table = {
     "flags":75,
     "pe_sign":10,
     "ratio":10,
+    "sections_names":15,
 }
 
 def check_magic_number(pe):
@@ -75,23 +76,38 @@ def ratio_virtual_raw_size(pe):
 
 def get_sections_number(summary):
     nb = len(summary["Sections"])
-    print(nb)
     diff = nb-10
     if diff > 0:
         count = score_table["number_of_sections"]
         count*=diff
-        print(count)
         return count,f"Il y a {nb} sections au total, ce qui est élevé."
     if nb-5 < 0:
         count = score_table["low_number_of_sections"]
-        print(count)
         return count,f"Il y a {nb} sections au total, ce qui est peu."
+    return 0
+
+def sections_names(pe):
+    suspicious = ["UPX","themida","taggant","vmp","MPRESS"] # liste de noms de section suspects
+    sections = pe.sections
+    lsec = []
+    for s in sections:
+        sname = s.Name.decode(errors="ignore").rstrip("\x00")
+        for ssp in suspicious:
+            if (ssp in sname) or sname == ".":
+                lsec.append(sname)
+    if len(lsec)!=0:
+        count=score_table["sections_names"]
+        alert_string = "Au moins une section a un nom suspect.\nSection(s) concernée(s) : "
+        for name in lsec:
+            alert_string+="\n"+name
+        print(alert_string)
+        return count,alert_string
     return 0
 
 
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
-check_list = [check_magic_number,pe_sign,ratio_virtual_raw_size]
+check_list = [check_magic_number,pe_sign,ratio_virtual_raw_size,sections_names]
 check_w_sum = [check_e_lfanew,check_flags,get_sections_number]
 
 def main(sum):
