@@ -10,7 +10,8 @@ score_table = {
     "pe_sign":10,
     "ratio":10,
     "sections_names":15,
-    "aslr":15
+    "aslr":15,
+    "code_cave":15
 }
 
 def check_magic_number(pe):
@@ -40,7 +41,7 @@ def check_flags(summary):
         count=score_table["flags"]
         alert_string = "Au moins une section est à la fois en écriture et en exécution.\nSection(s) concernée(s) : "
         for name in sec:
-            alert_string+="\n"+name
+            alert_string+=name+"\n"
         print(alert_string)
         return count,alert_string
     return 0
@@ -67,9 +68,9 @@ def ratio_virtual_raw_size(pe):
                 lsec.append(sname)
     if len(lsec)!=0:
         count=score_table["ratio"]
-        alert_string = "Au moins une section a un ratio VirtualSize/RawSize atypique.\nSection(s) concernée(s) : "
+        alert_string = "Au moins une section a un ratio VirtualSize/RawSize atypique.\n"
         for name in lsec:
-            alert_string+="\n"+name
+            alert_string+=name+"\n"
         print(alert_string)
         return count,alert_string
     return 0
@@ -98,9 +99,9 @@ def sections_names(pe):
                 lsec.append(sname)
     if len(lsec)!=0:
         count=score_table["sections_names"]
-        alert_string = "Au moins une section a un nom suspect.\nSection(s) concernée(s) : "
+        alert_string = "Au moins une section a un nom suspect.\n"
         for name in lsec:
-            alert_string+="\n"+name
+            alert_string+=name+"\n"
         print(alert_string)
         return count,alert_string
     return 0
@@ -120,12 +121,59 @@ def aslr(pe):
         return score_table["aslr"], f"L'ASLR n'est pas activé. Date de compilation indiquée : {dtc}"
     return 0
 
+def code_cave(pe):
+    suspicious_sections = []
+    min_cave_size = 512
+    for s in pe.sections:
+        flags = s.Characteristics
+        if not (flags & 0x20000000): # regarder les sections exécutables
+            continue
+        data = s.get_data()
+        if not data:
+            continue
+        max_run = 0
+        current_run = 0
+        empty_bytes = {0x00,0xFF,0x90} # bytes considérés comme étant vides
+        
+        for b in data:
+            if b in empty_bytes:
+                current_run+=1
+                if current_run - max_run > 0:
+                    max_run = current_run
+                    # extraire la plus grande séquence vide de la section
+            else:
+                current_run=0
+                # l'espace vide de la section est interrompu
 
+        if max_run - min_cave_size >= 0:
+            name = s.Name.decode(errors="ignore").rstrip("\x00")
+            suspicious_sections.append((name,max_run))
+            # tableau avec nom de la section + taille du code cave trouvé
+    
+    if len(suspicious_sections)!=0:
+        count=score_table["code_cave"]
+        alert_string = "Au moins une section possède un grand espace vide (potentiel code cave).\n"
+        for name,size in suspicious_sections:
+            alert_string+=f" - Section {name} : séquence vide maximale de {size} octets.\n"
+        print(alert_string)
+        return count,alert_string
+    return 0
 
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
-check_list = [check_magic_number,pe_sign,ratio_virtual_raw_size,sections_names,aslr]
-check_w_sum = [check_e_lfanew,check_flags,get_sections_number]
+check_list = [
+    check_magic_number,
+    pe_sign,
+    ratio_virtual_raw_size,
+    sections_names,
+    aslr,
+    code_cave
+    ]
+check_w_sum = [
+    check_e_lfanew,
+    check_flags,
+    get_sections_number
+    ]
 
 def main(sum):
     check_magic_number(sum)
