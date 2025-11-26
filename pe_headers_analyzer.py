@@ -11,7 +11,8 @@ score_table = {
     "ratio":10,
     "sections_names":15,
     "aslr":15,
-    "code_cave":15
+    "code_cave":15,
+    "aep":25
 }
 
 def check_magic_number(pe):
@@ -159,6 +160,33 @@ def code_cave(pe):
         return count,alert_string
     return 0
 
+def aep_out_of_text(pe):
+    aep = pe.OPTIONAL_HEADER.AddressOfEntryPoint
+    # On cherche dans quelle section se trouve l'AEP
+    aep_section_name = None
+
+    for s in pe.sections:
+        section_start = s.VirtualAddress
+        section_end = section_start + s.Misc_VirtualSize
+
+        # Est-ce que l'AEP tombe dans cette section ?
+        if  section_start <= aep < section_end:
+            aep_section_name = s.Name.decode(errors="ignore").rstrip("\x00")
+            break
+
+    # Sections légitimes
+    valid_code_sections = {".text",".code","CODE","TEXT",".itext"}
+
+    if aep_section_name is None: # /!\ trouvée dans aucune section
+        count = score_table["aep"]
+        return count,f"L'AddressOfEntryPoint (0x{aep:X}) ne se trouve dans aucune section connue."
+    if aep_section_name not in valid_code_sections:
+        count = score_table["aep"]
+        return count,f"L'AddressOfEntryPoint (0x{aep:X}) se trouve dans la section '{aep_section_name}' au lieu de .text/.code."
+    #print(aep_section_name)
+    return 0
+
+
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
 check_list = [
@@ -167,7 +195,8 @@ check_list = [
     ratio_virtual_raw_size,
     sections_names,
     aslr,
-    code_cave
+    code_cave,
+    aep_out_of_text
     ]
 check_w_sum = [
     check_e_lfanew,
