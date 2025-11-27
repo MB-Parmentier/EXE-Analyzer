@@ -2,7 +2,7 @@ from datetime import datetime
 
 score_table = {
     "magic_number":10,
-    "number_of_sections":0.5,
+    "number_of_sections":0.7,
     "low_number_of_sections":10,
     "aslr":10,
     "e_lfanew":15,
@@ -44,7 +44,6 @@ def check_flags(summary):
         alert_string = "Au moins une section est à la fois en écriture et en exécution.\nSection(s) concernée(s) : "
         for name in sec:
             alert_string+=name+"\n"
-        print(alert_string)
         return count,alert_string
     return 0
 
@@ -54,7 +53,6 @@ def pe_sign(pe):
     if eln != 0x00004550:
         count=score_table["pe_sign"]
         return count,f"La signature PE est invalide : {eln}"
-    print("C'est OK pour la signature")
     return 0
 
 def ratio_virtual_raw_size(pe):
@@ -73,17 +71,15 @@ def ratio_virtual_raw_size(pe):
         alert_string = "Au moins une section a un ratio VirtualSize/RawSize atypique.\n"
         for name in lsec:
             alert_string+=name+"\n"
-        print(alert_string)
         return count,alert_string
     return 0
 
 
 def get_sections_number(summary):
     nb = len(summary["Sections"])
-    diff = nb-10
-    if diff > 0:
+    if nb-10 > 0:
         count = score_table["number_of_sections"]
-        count*=diff
+        count*=nb
         return count,f"Il y a {nb} sections au total, ce qui est élevé."
     if nb-5 < 0:
         count = score_table["low_number_of_sections"]
@@ -104,7 +100,6 @@ def sections_names(pe):
         alert_string = "Au moins une section a un nom suspect.\n"
         for name in lsec:
             alert_string+=name+"\n"
-        print(alert_string)
         return count,alert_string
     return 0
 
@@ -157,7 +152,6 @@ def code_cave(pe):
         alert_string = "Au moins une section possède un grand espace vide (potentiel code cave).\n"
         for name,size in suspicious_sections:
             alert_string+=f" - Section {name} : séquence vide maximale de {size} octets.\n"
-        print(alert_string)
         return count,alert_string
     return 0
 
