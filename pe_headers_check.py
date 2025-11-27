@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 import pe_headers_function as phf
 import pe_headers_analyzer as pha
+import graph
 
 scores = []
 explanations = []
@@ -30,6 +31,7 @@ def main():
         sys.exit(2)
 
     pe = phf.pe_summary(path)
+    total_score = 0
     #phf.pretty_print(summary) <---------------- Affichage d'un résumé du fichier PE
     # Boucler sur toutes les fonctions en fournissant le PE comme paramètre
     for fun in pha.check_list:
@@ -37,12 +39,16 @@ def main():
         if elem != 0:
             scores.append(elem[0])
             explanations.append(elem[1])
+            total_score+=elem[0]
     # Maintenant, pour les fonctions ayant besoin du summary complet
     for fun in pha.check_w_sum:
         elem = fun(pe[1])
         if elem != 0:
             scores.append(elem[0])
             explanations.append(elem[1])
+            total_score+=elem[0]
+
+    graph.generate_report(total_score,explanations,scores)
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:
