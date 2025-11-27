@@ -16,10 +16,11 @@ score_table = {
 }
 
 def check_magic_number(pe):
-    mn = hex(pe.DOS_HEADER.e_magic)
+    #mn = hex(pe.DOS_HEADER.e_magic)
+    mn = pe.DOS_HEADER.e_magic
     if mn != 0x5a4d:
         count=score_table["magic_number"]
-        return count,"Le nombre magique est invalide (différent de MZ / 0x5a4d)."
+        return count,f"Le nombre magique est invalide (différent de MZ / 0x5a4d) : {mn}"
     return 0
 
 # Le "e_lfanew" pointe vers la table PE
@@ -49,10 +50,10 @@ def check_flags(summary):
 
 def pe_sign(pe):
     eln = pe.NT_HEADERS.Signature
-    eln = hex(eln)
+    #eln = hex(eln)
     if eln != 0x00004550:
         count=score_table["pe_sign"]
-        return count,"La signature PE est invalide."
+        return count,f"La signature PE est invalide : {eln}"
     print("C'est OK pour la signature")
     return 0
 
