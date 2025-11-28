@@ -48,7 +48,9 @@ def main():
             explanations.append(elem[1])
             total_score+=elem[0]
 
-    graph.generate_report(total_score,explanations,scores)
+    filename = str(path)
+    report_name = "report_"+filename[:-4]+".pdf" # report_nomdufichier.pdf
+    graph.generate_report(total_score,explanations,scores,report_name)
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:
