@@ -1,4 +1,6 @@
 from datetime import datetime
+import math
+from collections import Counter
 
 score_table = {
     "magic_number":10,
@@ -12,7 +14,8 @@ score_table = {
     "sections_names":15,
     "aslr":15,
     "code_cave":15,
-    "aep":25
+    "aep":25,
+    "entropy": 15,
 }
 
 def check_magic_number(pe):
@@ -181,6 +184,46 @@ def aep_out_of_text(pe):
     #print(aep_section_name)
     return 0
 
+def shannon_entropy(data):
+    if not data:
+        return 0.0
+    
+    cnt = Counter(data) # occurence des octets de la donnée
+    lgt = len(data) # nombre d'octets dans la donnée
+    entropy = 0.0
+
+    for count in cnt.values():
+        p = count/lgt
+        entropy -= p*math.log2(p)
+    
+    return entropy
+
+def check_entropy(pe):
+    threshold = 7.2
+    sec = []
+    # Calculer l'entropie de chaque section et l'analyser ensuite
+    for s in pe.sections:
+        name = s.Name.decode(errors="ignore").rstrip("\x00")
+        data = s.get_data()
+        if not data:
+            continue
+        entropy = shannon_entropy(data)
+        print(f"Entropie de {name} = {entropy}")
+
+        # Y a-t-il une entropie élevée sur une section critique ?
+        if name in [".text",".data",".rdata"] and entropy-threshold > 0:
+            sec.append((name,entropy))
+        elif entropy - 7.5 > 0: # sinon, toute section au-dessus d'un seuil
+            sec.append((name,entropy))
+
+    if sec:
+        count = score_table["entropy"]
+        alert = "Entropie anormalement élevée détectée :\n"
+        for name,ent in sec:
+            alert+= f" - Section {name} : entropie = {ent:.2f}\n"
+        return count,alert
+    return 0
+
 
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
@@ -191,7 +234,8 @@ check_list = [
     sections_names,
     aslr,
     code_cave,
-    aep_out_of_text
+    aep_out_of_text,
+    check_entropy
     ]
 check_w_sum = [
     check_e_lfanew,
