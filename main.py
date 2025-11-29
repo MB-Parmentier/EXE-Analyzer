@@ -18,6 +18,7 @@ import graph
 
 scores = []
 explanations = []
+remarks = []
 
 def main():
     p = argparse.ArgumentParser(description="Extract PE headers & section table")
@@ -47,10 +48,14 @@ def main():
             scores.append(elem[0])
             explanations.append(elem[1])
             total_score+=elem[0]
+    # Maintenant, pour les fonctions qui ne scorent pas (remarques)
+    for fun in pha.check_remarks:
+        elem = fun(pe[0])
+        remarks.append(elem)
 
     filename = str(path)
     report_name = "report_"+filename[:-4]+".pdf" # report_nomdufichier.pdf
-    graph.generate_report(total_score,explanations,scores,report_name)
+    graph.generate_report(total_score,explanations,scores,remarks,report_name)
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:

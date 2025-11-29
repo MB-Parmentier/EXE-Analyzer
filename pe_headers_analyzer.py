@@ -208,7 +208,6 @@ def check_entropy(pe):
         if not data:
             continue
         entropy = shannon_entropy(data)
-        print(f"Entropie de {name} = {entropy}")
 
         # Y a-t-il une entropie élevée sur une section critique ?
         if name in [".text",".data",".rdata"] and entropy-threshold > 0:
@@ -224,6 +223,27 @@ def check_entropy(pe):
         return count,alert
     return 0
 
+def check_overlay_entropy(pe):
+    last_section_end = 0
+    # Calculer la fin de chaque section pour obtenir la dernière
+    for s in pe.sections:
+        s_end = s.PointerToRawData + s.SizeOfRawData
+        if s_end - last_section_end > 0:
+            last_section_end = s_end
+
+    file_size = len(pe.__data__)
+    overlay_size = file_size - last_section_end
+
+    if overlay_size > 0:
+        # Extraire les données de l'overlay
+        overlay_data = pe.__data__[last_section_end:]
+        overlay_entropy = shannon_entropy(overlay_data)
+        
+        if overlay_entropy - 7.0 > 0:
+            return f"Overlay de {overlay_size} octets détecté avec entropie élevée ({overlay_entropy:.2f})"
+        else:
+            return f"Overlay de {overlay_size} octets détecté (entropie faible : {overlay_entropy:.2f})"
+    return 0
 
 # ------------------------------------ LIST OF ALL FUNCTIONS / TOUTES LES FONCTIONS --------
 
@@ -235,13 +255,16 @@ check_list = [
     aslr,
     code_cave,
     aep_out_of_text,
-    check_entropy
+    check_entropy,
     ]
 check_w_sum = [
     check_e_lfanew,
     check_flags,
     get_sections_number
     ]
+check_remarks = [check_overlay_entropy]
+# Pour les fonctions qui déclenchent trop de faux positifs
+# La vérification ajoute une remarque en bas du PDF plutôt qu'un score
 
 def main(sum):
     check_magic_number(sum)

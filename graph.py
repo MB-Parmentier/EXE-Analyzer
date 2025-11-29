@@ -3,7 +3,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-def generate_report(total_score, explanations, scores, output_path="report.pdf"):
+def generate_report(total_score, explanations, scores, remarks, output_path="report.pdf"):
     doc = SimpleDocTemplate(output_path, pagesize=A4)
     styles = getSampleStyleSheet()
     story = []
@@ -29,20 +29,24 @@ def generate_report(total_score, explanations, scores, output_path="report.pdf")
     story.append(Spacer(1, 12))
     
     # 3. Tableau des anomalies
-    table_data = [["Anomalie", "Score", "Explication"]]
-    cpt = 0
+    title = Paragraph(f"<font size=15>Anomalies trouvées</font><br/>", styles['Title'])
+    story.append(title)
+    story.append(Spacer(1, 12))
+
     anomalies_nb = len(scores)
-    #for score, msg in scores,explanations:
-    #    table_data.append(["msg[:40]", str(score), msg])
-    while cpt-anomalies_nb < 0:
-        table_data.append([cpt+1,scores[cpt],explanations[cpt]])
-        cpt+=1
     
     if anomalies_nb == 0:
         ok_sentence = Paragraph(f"Aucune anomalie détectée !", styles['BodyText'])
         story.append(ok_sentence)
         story.append(Spacer(1,12))
     else:
+        table_data = [["Anomalie", "Score", "Explication"]]
+        cpt = 0
+        #for score, msg in scores,explanations:
+        #    table_data.append(["msg[:40]", str(score), msg])
+        while cpt-anomalies_nb < 0:
+            table_data.append([cpt+1,scores[cpt],explanations[cpt]])
+            cpt+=1
         table = Table(table_data)
         table.setStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -52,6 +56,20 @@ def generate_report(total_score, explanations, scores, output_path="report.pdf")
         ])
         story.append(table)
     
+    # 4. Tableau des remarques
+
+    story.append(Spacer(1,24))
+    title = Paragraph(f"<font size=13>Remarques</font><br/>", styles['Title'])
+    story.append(title)
+
+    rnb = len(remarks)
+    if rnb == 0:
+        story.append(Paragraph("Aucune remarque à donner.", styles['BodyText']))
+        story.append(Spacer(1,12))
+    else:
+        table_data = [["Anomalie", "Score", "Explication"]]
+        for r in remarks:
+            story.append(Paragraph(" - "+r, styles['BodyText']))
     
     doc.build(story)
     print(f"Rapport généré : {output_path}")
