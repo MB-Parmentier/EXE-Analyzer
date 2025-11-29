@@ -23,8 +23,8 @@ def check_magic_number(pe):
     mn = pe.DOS_HEADER.e_magic
     if mn != 0x5a4d:
         count=score_table["magic_number"]
-        return count,f"Le nombre magique est invalide (différent de MZ / 0x5a4d) : {mn}"
-    return 0
+        return count,f"Le nombre magique est invalide (différent de MZ / 0x5a4d) : 0x{mn:X}"
+    return 0,f"Le nombre magique est correct (0x{mn:X})."
 
 # Le "e_lfanew" pointe vers la table PE
 # Il doit être plus petit que la taille du fichier
@@ -34,8 +34,8 @@ def check_e_lfanew(summary):
     eln = int(eln,16) # converti en base 10
     if eln > file_size:
         count=score_table["e_lfanew"]
-        return count,"L'entête e_lfanew est invalide (plus grand que la taille du fichier)."
-    return 0
+        return count,f"L'entête e_lfanew est invalide (plus grand que la taille du fichier) : 0x{eln:X}."
+    return 0,f"L'entête e_lfanew est correct (0x{eln:X})."
 
 def check_flags(summary):
     sec = []
@@ -44,19 +44,19 @@ def check_flags(summary):
             sec.append(s["Name"])
     if len(sec)!=0:
         count=score_table["flags"]
-        alert_string = "Au moins une section est à la fois en écriture et en exécution.\nSection(s) concernée(s) : "
+        alert_string = "Au moins une section est à la fois en écriture et en exécution.\nSection(s) concernée(s) :\n"
         for name in sec:
             alert_string+=name+"\n"
         return count,alert_string
-    return 0
+    return 0,f"Il n'y a aucune section à la fois en écriture et en exécution."
 
 def pe_sign(pe):
     eln = pe.NT_HEADERS.Signature
     #eln = hex(eln)
     if eln != 0x00004550:
         count=score_table["pe_sign"]
-        return count,f"La signature PE est invalide : {eln}"
-    return 0
+        return count,f"La signature PE est invalide : 0x{eln:X}."
+    return 0,f"La signature PE est valide : 0x{eln:X}."
 
 def ratio_virtual_raw_size(pe):
     jokers = [".data",".tls",".bss",".ndata"] # ces sections font exception
@@ -65,6 +65,9 @@ def ratio_virtual_raw_size(pe):
     for s in sections:
         sname = s.Name.decode(errors="ignore").rstrip("\x00")
         if sname not in jokers:
+            if s.SizeOfRawData == 0:
+                lsec.append(sname)
+                continue
             ratio = s.Misc_VirtualSize / s.SizeOfRawData
             #print("VSize :",s.Misc_VirtualSize,"\nRawSize :",s.SizeOfRawData,"\nRatio :",ratio)
             if (ratio<0.5) or (ratio>3):
@@ -75,7 +78,7 @@ def ratio_virtual_raw_size(pe):
         for name in lsec:
             alert_string+=name+"\n"
         return count,alert_string
-    return 0
+    return 0,f"Aucune section avec un ratio VirtualSize/RawSize atypique n'a été trouvée."
 
 
 def get_sections_number(summary):
@@ -87,7 +90,7 @@ def get_sections_number(summary):
     if nb-5 < 0:
         count = score_table["low_number_of_sections"]
         return count,f"Il y a {nb} sections au total, ce qui est peu."
-    return 0
+    return 0,f"Il y a {nb} sections au total, ce qui est correct (entre 5 et 10)."
 
 def sections_names(pe):
     suspicious = ["UPX","themida","taggant","vmp","MPRESS"] # liste de noms de section suspects
@@ -104,7 +107,8 @@ def sections_names(pe):
         for name in lsec:
             alert_string+=name+"\n"
         return count,alert_string
-    return 0
+    return 0,"Aucune section avec un nom suspect n'a été détectée.\n\
+        ('UPX','themida','taggant','vmp','MPRESS')"
 
 
 def aslr(pe):
@@ -116,10 +120,10 @@ def aslr(pe):
     # Si pas d'ASLR
     if not has_aslr:
         if ts-1325376000 > 0:
-            return score_table["aslr"], f"L'ASLR n'est pas activé sur un exécutable moderne (2012 et plus).\
+            return score_table["aslr"], f"L'ASLR n'est pas activé sur un exécutable moderne (2012 et plus).\n\
             Date de compilation indiquée : {dtc}" # si compilé après 2012
-        return score_table["aslr"], f"L'ASLR n'est pas activé. Date de compilation indiquée : {dtc}"
-    return 0
+        return score_table["aslr"], f"L'ASLR n'est pas activé. \nDate de compilation indiquée : {dtc}"
+    return 0,f"L'ASLR est activé. \nDate de compilation indiquée : {dtc}"
 
 def code_cave(pe):
     suspicious_sections = []
@@ -156,7 +160,7 @@ def code_cave(pe):
         for name,size in suspicious_sections:
             alert_string+=f" - Section {name} : séquence vide maximale de {size} octets.\n"
         return count,alert_string
-    return 0
+    return 0,"Aucun grand espace vide n'a été détecté dans une section."
 
 def aep_out_of_text(pe):
     aep = pe.OPTIONAL_HEADER.AddressOfEntryPoint
@@ -182,7 +186,7 @@ def aep_out_of_text(pe):
         count = score_table["aep"]
         return count,f"L'AddressOfEntryPoint (0x{aep:X}) se trouve dans la section '{aep_section_name}' au lieu de .text/.code."
     #print(aep_section_name)
-    return 0
+    return 0,f"L'AddressOfEntryPoint (0x{aep:X}) se trouve dans la section '{aep_section_name}'."
 
 def shannon_entropy(data):
     if not data:
@@ -221,7 +225,7 @@ def check_entropy(pe):
         for name,ent in sec:
             alert+= f" - Section {name} : entropie = {ent:.2f}\n"
         return count,alert
-    return 0
+    return 0,"Aucune entropie suspecte n'a été détectée dans une section."
 
 def check_overlay_entropy(pe):
     last_section_end = 0

@@ -3,7 +3,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-def generate_report(total_score, explanations, scores, remarks, output_path="report.pdf"):
+def generate_report(total_score, explanations, scores, remarks, valid, output_path="report.pdf"):
     doc = SimpleDocTemplate(output_path, pagesize=A4)
     styles = getSampleStyleSheet()
     story = []
@@ -56,7 +56,7 @@ def generate_report(total_score, explanations, scores, remarks, output_path="rep
         ])
         story.append(table)
     
-    # 4. Tableau des remarques
+    # 4. Liste des remarques
 
     story.append(Spacer(1,24))
     title = Paragraph(f"<font size=13>Remarques</font><br/>", styles['Title'])
@@ -69,8 +69,37 @@ def generate_report(total_score, explanations, scores, remarks, output_path="rep
     else:
         table_data = [["Anomalie", "Score", "Explication"]]
         for r in remarks:
-            story.append(Paragraph(" - "+r, styles['BodyText']))
+            story.append(Paragraph(" - "+str(r), styles['BodyText']))
     
+    story.append(Spacer(1,12))
+    
+    # 5. Tableau des points valides
+    title = Paragraph(f"<font size=15>Vérifications validées</font><br/>", styles['Title'])
+    story.append(title)
+    story.append(Spacer(1, 12))
+
+    valid_nb = len(valid)
+    
+    if valid_nb == 0:
+        nok_sentence = Paragraph(f"Aucun test n'a été passé par le fichier...", styles['BodyText'])
+        story.append(nok_sentence)
+        story.append(Spacer(1,12))
+    else:
+        table_data = [["Vérification", "Explication"]]
+        cpt = 0
+        while cpt-valid_nb < 0:
+            table_data.append([cpt+1,valid[cpt]])
+            cpt+=1
+        table = Table(table_data)
+        table.setStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.chartreuse),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkolivegreen),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ])
+        story.append(table)
+    
+
     doc.build(story)
     print(f"Rapport généré : {output_path}")
 

@@ -19,6 +19,7 @@ import graph
 scores = []
 explanations = []
 remarks = []
+valid = []
 
 def main():
     p = argparse.ArgumentParser(description="Extract PE headers & section table")
@@ -37,25 +38,30 @@ def main():
     # Boucler sur toutes les fonctions en fournissant le PE comme paramètre
     for fun in pha.check_list:
         elem = fun(pe[0])
-        if elem != 0:
+        if elem[0] != 0:
             scores.append(elem[0])
             explanations.append(elem[1])
             total_score+=elem[0]
+        else:
+            valid.append(elem[1])
     # Maintenant, pour les fonctions ayant besoin du summary complet
     for fun in pha.check_w_sum:
         elem = fun(pe[1])
-        if elem != 0:
+        if elem[0] != 0:
             scores.append(elem[0])
             explanations.append(elem[1])
             total_score+=elem[0]
+        else:
+            valid.append(elem[1])
     # Maintenant, pour les fonctions qui ne scorent pas (remarques)
     for fun in pha.check_remarks:
         elem = fun(pe[0])
-        remarks.append(elem)
+        if elem!=0:
+            remarks.append(elem)
 
     filename = str(path)
     report_name = "report_"+filename[:-4]+".pdf" # report_nomdufichier.pdf
-    graph.generate_report(total_score,explanations,scores,remarks,report_name)
+    graph.generate_report(total_score,explanations,scores,remarks,valid,report_name)
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:
